@@ -1936,7 +1936,13 @@ Git branch: `migrate-fastify` (create branch before starting).
     });
     document.getElementById(`sec-${tab}`).classList.add('active');
     document.getElementById(`tab-${tab}`).classList.add(`active-${tabColors[tab]}`);
-    window.scrollTo({ top: document.querySelector('.tab-nav-wrap').offsetTop - 1, behavior: 'smooth' });
+    
+    // Scroll to the beginning of the main content area
+    const mainElement = document.querySelector('.main');
+    if (mainElement) {
+      const targetScroll = mainElement.offsetTop - 60; // 60px offset for the sticky nav
+      window.scrollTo({ top: targetScroll, behavior: 'smooth' });
+    }
   }
 
   // ── Copy to clipboard ──────────────────────────────────────
