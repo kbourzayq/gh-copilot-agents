@@ -8,7 +8,7 @@ An interactive, zero-build HTML demo exploring **Agents**, **Skills**, **Prompts
 
 ## Overview
 
-This project is a **single-file, self-contained interactive demo** that teaches:
+This project is an **interactive demo with clean separation of concerns** that teaches:
 
 | Concept | What It Is | When to Use |
 |---------|-----------|-----------|
@@ -49,17 +49,44 @@ Then visit `http://localhost:8000/index.html`
 
 ---
 
+## Project Structure
+
+```
+├── index.html          # Main HTML structure (~1,170 lines)
+├── styles.css          # All styles and design tokens (~635 lines)
+├── script.js           # Interactive demos and tab logic (~347 lines)
+├── README.md           # This file
+└── .github/
+    └── copilot-instructions.md  # Development guidelines
+```
+
+### File Organization
+
+| File | Purpose | Lines |
+|------|---------|-------|
+| `index.html` | HTML structure, CDN links, content | ~1,170 |
+| `styles.css` | Design system, responsive styles, animations | ~635 |
+| `script.js` | Tab switching, copy-to-clipboard, animated demos | ~347 |
+
+---
+
 ## Architecture
 
-Everything lives in a single `index.html` file with three main sections:
+### 1. **`index.html`** — HTML Structure
 
-### 1. **`<head>`** — Dependencies
-- **Google Fonts**: Inter (body) + JetBrains Mono (code)
-- **highlight.js 11.9.0**: Code syntax highlighting with atom-one-dark theme
-  - Language support: YAML, Markdown, JSON
+Contains the semantic markup and content, with minimal external dependencies:
 
-### 2. **`<style>`** — Design System (~550 lines)
-Organized with section banners (e.g., `/* ─── Hero ─── */`)
+- **CDN Dependencies**:
+  - **Google Fonts**: Inter (body) + JetBrains Mono (code)
+  - **highlight.js 11.9.0**: Code syntax highlighting with atom-one-dark theme
+    - Language support: YAML, Markdown, JSON
+- **External Files**:
+  - `styles.css` — All styling
+  - `script.js` — All interactivity
+
+### 2. **`styles.css`** — Design System
+
+Organized with section banners (`/* ─── Section Name ─── */`):
 
 **CSS Custom Properties** define all colors, spacing, and typography:
 
@@ -83,18 +110,32 @@ Organized with section banners (e.g., `/* ─── Hero ─── */`)
 
 Example: `.tab-btn.active-a`, `.feat-card.s`, `.tag.p`
 
-### 3. **HTML Structure** — Five Main Sections
+### 3. **`script.js`** — Interactivity
+
+Pure JavaScript (no frameworks) handling:
+
+- **Tab switching** — `switchTab(tabName)` updates active states and smooth scrolls
+- **Copy-to-clipboard** —  `copyCode(btn, id)` for code samples
+- **Animated demos** — Simulated agent/skill/MCP tool execution with typewriter effects
+- **Prompt builder** — Dynamic template generation from user inputs
+
+---
+
+## HTML Structure
 
 ```
-<header class="hero">           ← Animated gradient hero
-<nav class="tab-nav-wrap">      ← Sticky tab bar (5 tabs)
-<main class="main">
-  <section id="sec-agents">     ← Agents deep-dive
-  <section id="sec-skills">     ← Skills deep-dive
-  <section id="sec-prompts">    ← Prompts deep-dive (default active)
-  <section id="sec-plan">       ← Plan Mode deep-dive
-  <section id="sec-mcp">        ← MCP deep-dive
-<footer>
+<body>
+  <header class="hero">           ← Animated gradient hero
+  <nav class="tab-nav-wrap">      ← Sticky tab bar (5 tabs)
+  <main class="main">
+    <section id="sec-prompts">    ← Prompts deep-dive (default active)
+    <section id="sec-agents">     ← Agents deep-dive
+    <section id="sec-skills">     ← Skills deep-dive
+    <section id="sec-plan">       ← Plan Mode deep-dive
+    <section id="sec-mcp">        ← MCP deep-dive
+  <footer>
+  <script src="script.js"></script>
+</body>
 ```
 
 Each section follows an identical pattern:

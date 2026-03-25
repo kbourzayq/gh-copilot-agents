@@ -2,21 +2,27 @@
 
 ## Project Overview
 
-A single-file, zero-build interactive HTML demo page explaining **Agents**, **Skills**, and **Prompts**. The entire project lives in one self-contained `index.html` — no package manager, no bundler, no build step. Open it directly in a browser.
+An interactive HTML demo page explaining **Agents**, **Skills**, **Prompts**, **Plan Mode**, and **MCP**. The project uses a clean separation of concerns with external CSS and JavaScript files — no package manager, no bundler, no build step. Open `index.html` directly in a browser.
 
 The companion `Github-copilot-agent-mode.pptx` is source material/reference only; do not modify it.
 
 ## Architecture
 
-Everything is in `index.html` in this order:
+The project consists of three main files:
 
-1. **`<head>`** — CDN links: Google Fonts (Inter, JetBrains Mono), highlight.js 11.9.0 (atom-one-dark theme + yaml/markdown language packs)
-2. **`<style>`** — All CSS (~550 lines). Organised with banner comments: `/* ─── Section Name ─── */`
-3. **`<header class="hero">`** — Animated gradient hero with jump-to pills
-4. **`<nav class="tab-nav-wrap">`** — Sticky tab bar (Agents / Skills / Prompts)
-5. **`<main class="main">`** — Three `<section class="section">` blocks, one per tab
-6. **`<footer>`**
-7. **`<script>`** — All JS (~150 lines). Initialises highlight.js, handles tab switching, copy-to-clipboard, and animated demo widgets
+1. **`index.html`** (~1,170 lines) — HTML structure with CDN links for fonts and highlight.js, plus links to external styles and scripts
+2. **`styles.css`** (~635 lines) — All CSS with design tokens and responsive styles
+3. **`script.js`** (~347 lines) — All JavaScript for tab switching, demos, and interactivity
+
+### index.html Structure
+
+1. **`<head>`** — CDN links: Google Fonts (Inter, JetBrains Mono), highlight.js 11.9.0 (atom-one-dark theme + yaml/markdown language packs), link to `styles.css`
+2. **`<body>`** — Pure HTML content organized as:
+   - `<header class="hero">` — Animated gradient hero with jump-to pills
+   - `<nav class="tab-nav-wrap">` — Sticky tab bar (Agents / Skills / Prompts / Plan / MCP)
+   - `<main class="main">` — Five `<section class="section">` blocks, one per tab
+   - `<footer>`
+   - `<script src="script.js"></script>` — External JavaScript reference
 
 ## CSS Design System
 
