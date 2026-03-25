@@ -216,14 +216,14 @@
     <div class="card" style="background:var(--accent-a-dim);border-color:rgba(79,142,247,.3)">
       <div class="card-title" style="color:var(--accent-a)"><span class="ct-dot" style="background:var(--accent-a)"></span> Interactive Console: Seeing the Flow</div>
       <h3 style="color:var(--text)">Watch the agent think in real-time</h3>
-      <p>When you run an agent in the interactive demo below, you'll see the execution trace showing:</p>
+      <p>When you run an agent in the interactive demo below, you'll see the complete execution lifecycle:</p>
       <ul style="margin:12px 0;padding-left:24px;color:var(--muted);line-height:1.8">
-        <li><strong style="color:var(--text)">Planning phase</strong>: Agent breaks down your goal into sub-tasks</li>
-        <li><strong style="color:var(--text)">Tool calls</strong>: Each tool invocation with input/output showing how skills and APIs are used</li>
-        <li><strong style="color:var(--text)">Reasoning steps</strong>: The agent's internal decision-making between actions</li>
-        <li><strong style="color:var(--text)">Final synthesis</strong>: How all results combine into the final answer</li>
+        <li><strong style="color:var(--text)">Phase 1 — Loading custom instructions</strong>: Agent loads <code style="font-family:var(--mono);font-size:.82rem;background:var(--bg-card2);border:1px solid var(--border);padding:2px 6px;border-radius:5px">copilot-instructions.md</code> with your project-wide conventions</li>
+        <li><strong style="color:var(--text)">Phase 2 — Loading file-specific instructions</strong>: Context-aware rules loaded based on file type (e.g., <code style="font-family:var(--mono);font-size:.82rem;background:var(--bg-card2);border:1px solid var(--border);padding:2px 6px;border-radius:5px">csharp.instructions.md</code> for .cs files)</li>
+        <li><strong style="color:var(--text)">Phase 3 — Planning</strong>: Agent breaks down your goal into executable sub-tasks</li>
+        <li><strong style="color:var(--text)">Phase 4 — Execution</strong>: Tool calls, skill loading (just-in-time), and reasoning steps with inputs/outputs</li>
       </ul>
-      <p><strong class="text-a">Prompt order in action:</strong> The system prompt establishes <em>how</em> to think, your user prompt defines <em>what</em> to accomplish, and skills provide <em>reusable capabilities</em> the agent can call upon.</p>
+      <p><strong class="text-a">Layered context in action:</strong> Custom instructions shape <em>how</em> to code, file-specific rules enforce <em>language conventions</em>, skills provide <em>specialized capabilities</em>, and your prompt defines <em>what</em> to accomplish. Each layer loads only when needed.</p>
     </div>
 
     <div class="sec-divider"><span>Sample Spec (Markdown)</span></div>
@@ -233,56 +233,61 @@
       <div class="code-header">
         <div style="display:flex;align-items:center;gap:14px">
           <div class="code-dots"><span class="r"></span><span class="y"></span><span class="g"></span></div>
-          <span class="code-lang">📄 agent-spec.md</span>
+          <span class="code-lang">📄 refactor-assistant.agent.md</span>
         </div>
         <button class="copy-btn" onclick="copyCode(this, 'agent-md')">📋 Copy</button>
       </div>
-      <pre><code class="language-markdown" id="agent-md"># 🤖 Agent Spec: PR Summariser
+      <pre><code class="language-yaml" id="agent-md">---
+name: refactor-assistant
+description: Analyze source code, identify refactoring opportunities, and apply safe transformations following project conventions and language-specific best practices.
+---
 
-## Overview
-| Field       | Value                         |
-|-------------|-------------------------------|
-| Name        | `pr-summariser`               |
-| Version     | `1.0.0`                       |
-| Mode        | `background`                  |
-| Model       | `claude-sonnet-4`             |
+# Instructions
 
-## Goal
-Fetch the latest pull requests from a GitHub repository, summarise each
-one in plain language, and create a tracking issue with the results.
+You are an expert code refactoring assistant. Your role is to analyze code, identify improvement opportunities, and apply safe transformations while respecting existing conventions.
 
-## System Prompt
-```
-You are a precise code reviewer assistant. You summarise GitHub PRs
-concisely (≤ 3 sentences each). Always include: what changed, why it
-matters, and any risks. Output as GitHub-flavoured Markdown.
-```
+## Context Loading (Automatic)
 
-## Tools Available
-- `github/list_pull_requests` — list open PRs
-- `github/get_pr_diff`        — fetch the diff
-- `github/create_issue`       — open the tracking issue
-- `web_search`                — look up referenced issues
+Before analyzing any code, you MUST load context in this order:
 
-## Steps (Planned)
-1. Call `list_pull_requests` with `state: open, per_page: 10`
-2. For each PR → call `get_pr_diff`
-3. Summarise each diff using the system prompt guidance
-4. Compile summaries into a Markdown issue body
-5. Call `create_issue` with the compiled body
+1. **Global instructions**: Load `copilot-instructions.md` for project-wide conventions
+2. **File-specific instructions**: Load `{language}.instructions.md` based on the file being edited (e.g., `csharp.instructions.md` for .cs files, `typescript.instructions.md` for .ts files)
+
+These instructions establish coding patterns, naming conventions, and style preferences that you must follow.
+
+## Skills Available
+
+Invoke these skills just-in-time as needed:
+
+- **code-analyzer** (v2.3.1) — AST analysis and pattern detection for identifying refactoring opportunities
+- **refactor-assistant** (v1.8.0) — Safe refactoring transformations that respect loaded instructions
+- **test-validator** (v3.0.0) — Run and verify test suites to ensure refactorings don't break functionality
+
+## Execution Flow
+
+Follow this workflow for every refactoring request:
+
+**Phase 1**: Load custom instructions (global + file-specific)
+**Phase 2**: Read and analyze the target code using `code-analyzer` skill
+**Phase 3**: Apply refactorings using `refactor-assistant` skill
+**Phase 4**: Validate changes with `test-validator` skill
 
 ## Guardrails
-- **Max tool calls**: 30
-- **No destructive writes** (delete/merge) without human approval
-- **Timeout**: 5 minutes
+
+- **Max tool calls**: 30 per execution
+- **Always preserve tests** — never delete tests without explicit approval
+- **Respect loaded instructions** — all changes must follow conventions from loaded .instructions files
+- **Timeout**: 3 minutes maximum
+- **Validate before committing** — all tests must pass
 
 ## Output Format
-```markdown
-## PR Summary Report — 2026-03-25
-### #42 · Fix auth token refresh
-**Changed**: Updated token expiry logic in `auth.ts`.
-**Why it matters**: Prevents silent session drops.
-**Risk**: Low — covered by existing tests.
+
+Provide a summary showing:
+```
+✓ Instructions loaded: [list of loaded instruction files]
+✓ Skills invoked: [list of skills used]
+✓ Changes applied: [count and types of refactorings]
+✓ Tests: [test results]
 ```
 </code></pre>
     </div>
@@ -292,33 +297,40 @@ matters, and any risks. Output as GitHub-flavoured Markdown.
     <!-- Interactive Agent Demo -->
     <div class="demo-box">
       <div class="demo-label">🤖 Simulate an Agent Run</div>
+      <p style="font-size:.88rem;margin-bottom:12px;color:var(--muted)">Watch how an agent loads custom instructions, file-specific prompts, and skills before executing your goal.</p>
       <div class="demo-input-row">
-        <input class="demo-input" id="agent-goal" placeholder="Enter a goal, e.g. Summarise open PRs in my repo" style="--accent-focus:var(--accent-a)" />
+        <input class="demo-input" id="agent-goal" placeholder="Enter a goal, e.g. Refactor authentication logic in auth.cs" style="--accent-focus:var(--accent-a)" />
         <button class="demo-btn a" id="agent-run-btn" onclick="runAgentDemo()">▶ Run Agent</button>
       </div>
-      <div class="demo-output" id="agent-output">Enter a goal above and click Run Agent to simulate a reasoning trace…</div>
+      <div class="demo-output" id="agent-output">Enter a goal above and click Run Agent to see the full agent initialization and execution flow…</div>
     </div>
 
     <!-- MD Preview -->
     <div class="sec-divider"><span>Rendered Markdown Preview</span></div>
     <div class="md-preview">
-      <h1>🤖 Agent: PR Summariser</h1>
-      <p><span class="md-badge" style="background:var(--accent-a-dim);color:var(--accent-a);border:1px solid rgba(79,142,247,.3)">v1.0.0</span><span class="md-badge" style="background:rgba(62,207,142,.1);color:var(--accent-s);border:1px solid rgba(62,207,142,.3)">background</span><span class="md-badge" style="background:var(--accent-p-dim);color:var(--accent-p);border:1px solid rgba(167,139,250,.3)">claude-sonnet-4</span></p>
+      <h1>🤖 Agent: Code Refactoring Assistant</h1>
+      <p><span class="md-badge" style="background:var(--accent-a-dim);color:var(--accent-a);border:1px solid rgba(79,142,247,.3)">v2.1.0</span><span class="md-badge" style="background:rgba(62,207,142,.1);color:var(--accent-s);border:1px solid rgba(62,207,142,.3)">interactive</span><span class="md-badge" style="background:var(--accent-p-dim);color:var(--accent-p);border:1px solid rgba(167,139,250,.3)">claude opus 4.6</span></p>
       <h2>What it does</h2>
-      <p>Fetches the latest pull requests from a GitHub repository, summarises each one in plain language, and creates a tracking issue with the results.</p>
-      <h2>Tools</h2>
+      <p>Analyzes source code to identify refactoring opportunities and applies safe transformations while following project conventions and language-specific best practices. Automatically loads custom instructions and invokes specialized skills just-in-time.</p>
+      <h2>Custom Instructions (Auto-loaded)</h2>
       <ul>
-        <li><code>github/list_pull_requests</code> — list open PRs</li>
-        <li><code>github/get_pr_diff</code> — fetch the diff</li>
-        <li><code>github/create_issue</code> — open the tracking issue</li>
+        <li><code>copilot-instructions.md</code> — Project-wide conventions</li>
+        <li><code>{language}.instructions.md</code> — Language-specific rules</li>
+      </ul>
+      <h2>Skills</h2>
+      <ul>
+        <li><code>code-analyzer</code> v2.3.1 — AST analysis and pattern detection</li>
+        <li><code>refactor-assistant</code> v1.8.0 — Safe refactoring transformations</li>
+        <li><code>test-validator</code> v3.0.0 — Run and verify test suites</li>
       </ul>
       <h2>Guardrails</h2>
       <ul>
         <li>Max <strong>30 tool calls</strong> per run</li>
-        <li>No destructive writes without human approval</li>
-        <li>Timeout: <strong>5 minutes</strong></li>
+        <li>Always <strong>preserve tests</strong> — no deletion without approval</li>
+        <li>Skills loaded <strong>just-in-time</strong> only when needed</li>
+        <li>Timeout: <strong>3 minutes</strong></li>
       </ul>
-      <blockquote><p>💡 <strong>Tip:</strong> Always set a tool-call limit and a timeout. Runaway agents are the most common failure mode.</p></blockquote>
+      <blockquote><p>💡 <strong>Tip:</strong> This agent demonstrates layered context loading — custom instructions shape behavior, file-specific rules enforce conventions, and skills provide specialized capabilities on-demand.</p></blockquote>
     </div>
 
   </section>
